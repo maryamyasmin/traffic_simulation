@@ -1,0 +1,79 @@
+#!/bin/bash
+# Script A: Simulate HTTP/HTTPS, DNS, and FTP traffic
+
+# Total session duration: 30 minutes (in seconds)
+TOTAL_DURATION=$((30 * 60))
+START_TIME=$(date +%s)
+
+# Define targets for each protocol
+HTTP_URLS=(
+    "https://www.google.com"
+    "https://www.youtube.com"
+    "https://www.wikipedia.org"
+    "https://www.reddit.com"
+    "https://www.bbc.com"
+)
+
+DNS_SERVERS=(
+    "1.1.1.1"           # Cloudflare DNS
+    "8.8.8.8"           # Google DNS
+    "208.67.222.222"    # OpenDNS
+    "9.9.9.9"           # Quad9
+    "208.75.220.220"    # Example for IBM X-Force
+)
+
+FTP_URLS=(
+    "ftp://ftp.digicert.com"
+    "ftp://ftp.adobe.com"
+    "ftp://ftp.debian.org"
+    "ftp://ftp.redhat.com"
+    "ftp://ftp.mozilla.org"
+)
+
+# Function to generate a random wait time (between 5 and 30 seconds)
+random_wait() {
+    echo $((RANDOM % 26 + 5))
+}
+
+simulate_http() {
+    local url=${HTTP_URLS[$RANDOM % ${#HTTP_URLS[@]}]}
+    local duration=$(random_wait)
+    echo "HTTP: Browsing $url for $duration seconds"
+    # Fetch the page content with curl (simulate page load)
+    curl -s "$url" > /dev/null
+    sleep $duration
+}
+
+simulate_dns() {
+    local server=${DNS_SERVERS[$RANDOM % ${#DNS_SERVERS[@]}]}
+    local duration=$(random_wait)
+    echo "DNS: Querying example.com using DNS server $server for $duration seconds"
+    # Query example.com using dig with the specified nameserver
+    dig @"$server" example.com > /dev/null
+    sleep $duration
+}
+
+simulate_ftp() {
+    local url=${FTP_URLS[$RANDOM % ${#FTP_URLS[@]}]}
+    local duration=$(random_wait)
+    echo "FTP: Accessing $url for $duration seconds"
+    # Use wget in spider mode to simulate FTP access
+    wget --spider "$url" &> /dev/null
+    sleep $duration
+}
+
+# Array of protocol simulation functions
+PROTOCOLS=(simulate_http simulate_dns simulate_ftp)
+
+# Main loop: continue until TOTAL_DURATION is reached
+while [ $(($(date +%s) - START_TIME)) -lt $TOTAL_DURATION ]; do
+    # Randomly choose one of the protocol simulation functions
+    protocol_func=${PROTOCOLS[$RANDOM % ${#PROTOCOLS[@]}]}
+    $protocol_func
+    # Pause a random duration between actions
+    pause=$(random_wait)
+    echo "Pausing for $pause seconds..."
+    sleep $pause
+done
+
+echo "Script A: Browsing session complete."

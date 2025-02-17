@@ -1,0 +1,5 @@
+simulate_dhcp() {
+    echo "Simulating DHCP DISCOVER..."
+    sudo dhcping -s 192.168.122.1 -c 192.168.122.100 &> /dev/null
+    random_pause
+}

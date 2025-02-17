@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# Define the log file
+LOG_FILE="traffic_simulation.log"
+
+# Define the duration for the script to run (in seconds)
+DURATION=600  # 10 minutes
+
+# Start time
+START_TIME=$(date +%s)
+
+# Read URLs from urls.txt file
+URLS=$(cat urls.txt)
+
+# Define DNS query domains
+DNS_QUERIES=(
+    "example.com"
+    "wikipedia.org"
+    "yahoo.com"
+    "github.com"
+    "google.com"
+)
+
+# Define email simulation using SMTP, IMAP, or POP3
+MAIL_SERVERS=(
+    "smtp.gmail.com"
+    "imap.gmail.com"
+    "pop.gmail.com"
+)
+
+# Function to simulate HTTP/HTTPS traffic
+simulate_http_https() {
+    echo "$(date): Starting HTTP/HTTPS traffic simulation..." | tee -a "$LOG_FILE"
+    for url in $URLS; do
+        echo "$(date): Accessing $url" | tee -a "$LOG_FILE"
+        curl -s -o /dev/null -w "HTTP Status: %{http_code} - URL: %{url_effective}\n" "$url" >> "$LOG_FILE"
+    done
+}
+
+# Function to simulate DNS queries
+simulate_dns() {
+    echo "$(date): Starting DNS traffic simulation..." | tee -a "$LOG_FILE"
+    for domain in "${DNS_QUERIES[@]}"; do
+        echo "$(date): Querying DNS for $domain" | tee -a "$LOG_FILE"
+        dig "$domain" >> "$LOG_FILE"
+    done
+}
+
+# Function to simulate mail server connections
+simulate_mail() {
+    echo "$(date): Starting Mail traffic simulation..." | tee -a "$LOG_FILE"
+    for server in "${MAIL_SERVERS[@]}"; do
+        echo "$(date): Pinging mail server $server" | tee -a "$LOG_FILE"
+        ping -c 4 "$server" >> "$LOG_FILE"
+    done
+}
+
+# Loop to keep simulating traffic until the duration is reached
+echo "$(date): Starting traffic simulation for $DURATION seconds..." | tee -a "$LOG_FILE"
+while [ $(( $(date +%s) - START_TIME )) -lt $DURATION ]; do
+    simulate_http_https
+    simulate_dns
+    simulate_mail
+    sleep 10  # Wait 10 seconds before the next round
+done
+
+echo "$(date): Traffic simulation completed." | tee -a "$LOG_FILE"

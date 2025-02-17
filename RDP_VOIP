@@ -1,0 +1,61 @@
+#!/bin/bash
+# Script C: Simulate RDP and VoIP/SIP traffic
+
+TOTAL_DURATION=$((30 * 60))
+START_TIME=$(date +%s)
+
+# Define targets for RDP and VoIP
+RDP_TARGETS=(
+    "azure-vm.example.com"         # Microsoft Azure Virtual Desktop
+    "aws-workspace.example.com"    # AWS Workspaces
+    "gcloud-vm.example.com"        # Google Cloud Windows VM
+    "ibm-vm.example.com"           # IBM Cloud RDP
+    "ovh-vm.example.com"           # OVH Windows Server
+)
+
+VOIP_TARGETS=(
+    "https://www.zoom.us"
+    "https://teams.microsoft.com"
+    "https://meet.google.com"
+    "https://www.webex.com"
+    "https://www.skype.com"
+)
+
+random_wait() {
+    echo $((RANDOM % 26 + 5))
+}
+
+simulate_rdp() {
+    local target=${RDP_TARGETS[$RANDOM % ${#RDP_TARGETS[@]}]}
+    local duration=$(random_wait)
+    echo "RDP: Simulating connection to $target on port 3389 for $duration seconds"
+    # Use netcat to simulate an RDP connection on port 3389
+    timeout 5 bash -c "nc -z -w 5 $target 3389" &> /dev/null
+    sleep $duration
+}
+
+simulate_voip() {
+    local url=${VOIP_TARGETS[$RANDOM % ${#VOIP_TARGETS[@]}]}
+    local duration=$(random_wait)
+    echo "VoIP: Accessing $url for $duration seconds"
+    # Use curl to simulate accessing the VoIP service webpage
+    curl -s "$url" > /dev/null
+    sleep $duration
+}
+
+PROTOCOLS=(simulate_rdp simulate_voip)
+
+while [ $(($(date +%s) - START_TIME)) -lt $TOTAL_DURATION ]; do
+    protocol_func=${PROTOCOLS[$RANDOM % ${#PROTOCOLS[@]}]}
+    $protocol_func
+    pause=$(random_wait)
+    echo "Pausing for $pause seconds..."
+    sleep $pause
+done
+
+echo "Script C: Browsing session complete."
+
+
+
+
+

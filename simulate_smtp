@@ -1,0 +1,57 @@
+#!/bin/bash
+# Script B: Simulate Email (SMTP) and SSH traffic
+
+TOTAL_DURATION=$((30 * 60))
+START_TIME=$(date +%s)
+
+# Define targets for Email and SSH
+EMAIL_SERVERS=(
+    "smtp.gmail.com"
+    "smtp.mail.yahoo.com"
+    "smtp.office365.com"
+    "mail.protonmail.com"
+    "smtp.zoho.com"
+)
+
+SSH_TARGETS=(
+    "ssh.github.com"
+    "ssh.bitbucket.com"
+    "digitalocean.example.com"  # Placeholder for DigitalOcean VPS
+    "linode.example.com"        # Placeholder for Linode SSH
+    "vultr.example.com"         # Placeholder for Vultr SSH
+)
+
+random_wait() {
+    echo $((RANDOM % 26 + 5))
+}
+
+simulate_email() {
+    local server=${EMAIL_SERVERS[$RANDOM % ${#EMAIL_SERVERS[@]}]}
+    local duration=$(random_wait)
+    echo "Email: Simulating connection to $server on port 25 for $duration seconds"
+    # Use netcat to simulate an SMTP connection (sending QUIT immediately)
+    timeout 5 bash -c "echo QUIT | nc -w 5 $server 25" &> /dev/null
+    sleep $duration
+}
+
+simulate_ssh() {
+    local target=${SSH_TARGETS[$RANDOM % ${#SSH_TARGETS[@]}]}
+    local duration=$(random_wait)
+    echo "SSH: Simulating SSH connection to $target on port 22 for $duration seconds"
+    # Use netcat to simulate an SSH connection attempt
+    timeout 5 bash -c "nc -z -w 5 $target 22" &> /dev/null
+    sleep $duration
+}
+
+PROTOCOLS=(simulate_email simulate_ssh)
+
+while [ $(($(date +%s) - START_TIME)) -lt $TOTAL_DURATION ]; do
+    protocol_func=${PROTOCOLS[$RANDOM % ${#PROTOCOLS[@]}]}
+    $protocol_func
+    pause=$(random_wait)
+    echo "Pausing for $pause seconds..."
+    sleep $pause
+done
+
+echo "Script B: Browsing session complete."
+

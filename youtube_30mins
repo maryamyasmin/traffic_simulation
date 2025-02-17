@@ -1,0 +1,33 @@
+#!/bin/bash
+
+echo "Starting YouTube session for 30 minutes..."
+firefox "https://www.youtube.com/watch?v=dQw4w9WgXcQ" &
+YT_PID=$!
+sleep 1800
+kill $YT_PID
+
+echo "Starting Gmail session for 15 minutes..."
+firefox "https://mail.google.com" &
+GM_PID=$!
+sleep 900
+kill $GM_PID
+
+echo "Starting Wikipedia session for 15 minutes..."
+firefox "https://en.wikipedia.org" &
+WP_PID=$!
+sleep 900
+kill $WP_PID
+
+echo "Starting GitHub session for 15 minutes..."
+firefox "https://github.com" &
+GH_PID=$!
+sleep 900
+kill $GH_PID
+
+echo "Starting Skype session for 5 minutes..."
+firefox "https://web.skype.com" &
+SK_PID=$!
+sleep 300
+kill $SK_PID
+
+echo "Script 1 completed."

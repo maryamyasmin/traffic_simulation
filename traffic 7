@@ -1,0 +1,42 @@
+#!/bin/bash
+duration=$((4 * 60 * 60))  # Run for 4 hours
+start_time=$(date +%s)
+
+while [ $(($(date +%s) - start_time)) -lt $duration ]; do
+    echo "Browsing: https://bbc.com"
+    curl -s -L "https://bbc.com" > /dev/null
+    
+    echo "Clicking on a random BBC News link..."
+    curl -s -L "https://bbc.com/news" > /dev/null
+    sleep $((RANDOM % 10 + 5))
+
+    echo "DNS Query: Resolving news.bbc.co.uk"
+    dig +short news.bbc.co.uk @8.8.8.8 > /dev/null
+    sleep $((RANDOM % 10 + 5))
+
+    echo "Downloading file from Apache FTP"
+    wget -q --spider ftp://ftp.apache.org
+    sleep $((RANDOM % 20 + 10))
+
+    echo "Sending email via Outlook SMTP"
+    telnet smtp.office365.com 587 > /dev/null 2>&1
+    sleep $((RANDOM % 10 + 5))
+
+    echo "Checking mail using Yahoo IMAP"
+    telnet imap.mail.yahoo.com 993 > /dev/null 2>&1
+    sleep $((RANDOM % 15 + 10))
+
+    echo "SSH Access to DigitalOcean VPS"
+    ssh -o BatchMode=yes -o ConnectTimeout=5 user@server-ip exit
+    sleep $((RANDOM % 15 + 5))
+
+    echo "RDP Connection to AWS Workspaces"
+    rdesktop -u user -p password rdp://aws-workspace > /dev/null 2>&1
+    sleep $((RANDOM % 15 + 5))
+
+    echo "Making a call via WhatsApp VoIP"
+    curl -s -L "https://web.whatsapp.com" > /dev/null
+    sleep $((RANDOM % 10 + 5))
+done
+
+echo "Simulation complete!"

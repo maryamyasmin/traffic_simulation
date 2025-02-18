@@ -1,0 +1,107 @@
+#!/bin/bash
+# Traffic Simulator - Variant 1
+
+TOTAL_DURATION=$((4 * 3600))  # 4 hours in seconds
+START_TIME=$(date +%s)
+
+HTTP_URLS=(
+    "https://twitter.com"
+    "https://www.wikipedia.org"
+    "https://github.com"
+)
+
+DNS_SERVERS=(
+    "1.1.1.1"  # Cloudflare DNS
+    "8.8.8.8"  # Google DNS
+    "208.67.222.222"  # OpenDNS
+)
+
+FTP_SERVERS=(
+    "ftp://ftp.debian.org"
+    "ftp://ftp.fedora.com"
+    "ftp://ftp.ubuntu.com"
+)
+
+EMAIL_SERVERS=(
+    "smtp.gmail.com"
+    "smtp.office365.com"
+    "mail.protonmail.com"
+)
+
+SSH_TARGETS=(
+    "ec2-user@aws-instance-ip"
+    "user@digitalocean-ip"
+    "user@linode-ip"
+)
+
+RDP_TARGETS=(
+    "rdp://gcloud-vm"
+    "rdp://oracle-vm"
+    "rdp://chrome-rdp"
+)
+
+VOIP_URLS=(
+    "https://www.microsoft.com/en-us/microsoft-teams"
+    "https://telegram.org"
+    "https://zoom.us"
+)
+
+simulate_http() {
+    local url=${HTTP_URLS[$RANDOM % ${#HTTP_URLS[@]}]}
+    echo "Browsing: $url"
+    curl -s "$url" > /dev/null
+    sleep 10
+}
+
+simulate_dns() {
+    local server=${DNS_SERVERS[$RANDOM % ${#DNS_SERVERS[@]}]}
+    echo "Querying DNS server: $server"
+    nslookup example.com $server > /dev/null
+    sleep 5
+}
+
+simulate_ftp() {
+    local server=${FTP_SERVERS[$RANDOM % ${#FTP_SERVERS[@]}]}
+    echo "Downloading file from FTP: $server"
+    wget -q -O /dev/null "$server"
+    sleep 20
+}
+
+simulate_email() {
+    local server=${EMAIL_SERVERS[$RANDOM % ${#EMAIL_SERVERS[@]}]}
+    echo "Connecting to Email server: $server"
+    timeout 10 bash -c "echo QUIT | nc -w 5 $server 25" > /dev/null
+    sleep 10
+}
+
+simulate_ssh() {
+    local target=${SSH_TARGETS[$RANDOM % ${#SSH_TARGETS[@]}]}
+    echo "Attempting SSH connection: $target"
+    timeout 10 ssh -o StrictHostKeyChecking=no $target exit > /dev/null 2>&1
+    sleep 15
+}
+
+simulate_rdp() {
+    local target=${RDP_TARGETS[$RANDOM % ${#RDP_TARGETS[@]}]}
+    echo "Attempting RDP connection: $target"
+    timeout 10 bash -c "nc -z -w 5 ${target#rdp://} 3389" > /dev/null 2>&1
+    sleep 20
+}
+
+simulate_voip() {
+    local url=${VOIP_URLS[$RANDOM % ${#VOIP_URLS[@]}]}
+    echo "Accessing VoIP service: $url"
+    curl -s "$url" > /dev/null
+    sleep 10
+}
+
+protocol_functions=(simulate_http simulate_dns simulate_ftp simulate_email simulate_ssh simulate_rdp simulate_voip)
+
+echo "Starting traffic simulation..."
+while [ $(($(date +%s) - START_TIME)) -lt $TOTAL_DURATION ]; do
+    chosen_func=${protocol_functions[$RANDOM % ${#protocol_functions[@]}]}
+    echo "Running: $chosen_func"
+    $chosen_func
+done
+
+echo "Simulation complete."

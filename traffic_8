@@ -1,0 +1,42 @@
+#!/bin/bash
+duration=$((4 * 60 * 60))  # Run for 4 hours
+start_time=$(date +%s)
+
+while [ $(($(date +%s) - start_time)) -lt $duration ]; do
+    echo "Browsing: https://twitter.com"
+    curl -s -L "https://twitter.com" > /dev/null
+
+    echo "Clicking on a trending topic..."
+    curl -s -L "https://twitter.com/explore" > /dev/null
+    sleep $((RANDOM % 10 + 5))
+
+    echo "DNS Query: Resolving api.twitter.com"
+    dig +short api.twitter.com @1.1.1.1 > /dev/null
+    sleep $((RANDOM % 10 + 5))
+
+    echo "Downloading file from Ubuntu FTP"
+    wget -q --spider ftp://ftp.ubuntu.com
+    sleep $((RANDOM % 20 + 10))
+
+    echo "Sending email via ProtonMail SMTP"
+    telnet mail.protonmail.com 465 > /dev/null 2>&1
+    sleep $((RANDOM % 10 + 5))
+
+    echo "Checking mail using GMX IMAP"
+    telnet imap.gmx.com 993 > /dev/null 2>&1
+    sleep $((RANDOM % 15 + 10))
+
+    echo "SSH Access to AWS EC2 instance"
+    ssh -o BatchMode=yes -o ConnectTimeout=5 ec2-user@instance-ip exit
+    sleep $((RANDOM % 15 + 5))
+
+    echo "RDP Connection to Google Cloud Windows VM"
+    rdesktop -u user -p password rdp://gcloud-vm > /dev/null 2>&1
+    sleep $((RANDOM % 15 + 5))
+
+    echo "Making a call via Microsoft Teams VoIP"
+    curl -s -L "https://teams.microsoft.com" > /dev/null
+    sleep $((RANDOM % 10 + 5))
+done
+
+echo "Simulation complete!"

@@ -61,7 +61,7 @@ SSH_TARGETS=(
 )
 
 # FTP: Using your vsftpd server details
-FTP_URL="ftp://192.168.122.171/sample.txt"  # Ensure 'sample.txt' exists on the server
+FTP_URL="ftp://192.168.122.171/google-chrome-stable_current_amd64.deb"  # Ensure 'sample.txt' exists on the server
 FTP_USER="ftpuser"
 FTP_PASS="ftpuser"
 

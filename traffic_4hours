@@ -1,0 +1,176 @@
+#!/bin/bash
+# Traffic Simulator - Variant 2
+# Simulates network activity including:
+# - Browsing with random link clicks
+# - DHCP, Email, SSH, FTP, VoIP, RDP, and YouTube streaming
+
+TOTAL_DURATION=$((4 * 3600))  # 4 hours in seconds
+START_TIME=$(date +%s)
+
+# Updated HTTP URLs
+HTTP_URLS=(
+    "https://news.ycombinator.com"
+    "https://www.nytimes.com"
+    "https://www.theguardian.com"
+    "https://www.aljazeera.com"
+    "https://www.forbes.com"
+)
+
+# Updated HTTPS URLs
+HTTPS_URLS=(
+    "https://www.apple.com"
+    "https://www.netflix.com"
+    "https://www.spotify.com"
+    "https://www.adobe.com"
+    "https://www.tesla.com"
+)
+
+# Updated Email servers
+EMAIL_SERVERS=(
+    "smtp.yahoo.com:25"
+    "imap.outlook.com:143"
+    "pop.gmail.com:110"
+    "smtp.zoho.com:25"
+    "imap.aol.com:143"
+)
+
+# Updated SSH Targets
+SSH_TARGETS=(
+    "github.com:22"
+    "gitlab.com:22"
+    "server1.example.com:22"
+    "server2.example.com:22"
+    "cloudserver.example.com:22"
+)
+
+# Updated FTP server details
+FTP_URL="ftp://192.168.122.172/testfile.txt"
+FTP_USER="ftpuser"
+FTP_PASS="ftpuser"
+
+# Updated VoIP URLs
+VOIP_URLS=(
+    "https://www.gotomeeting.com"
+    "https://www.zoomgov.com"
+    "https://whereby.com"
+    "https://www.bluejeans.com"
+    "https://www.vonage.com"
+)
+
+# Updated RDP targets
+RDP_TARGETS=(
+    "remote.example1.com:3389"
+    "windowsvm.example2.com:3389"
+    "enterprise-vm.example3.com:3389"
+    "workstation.example4.com:3389"
+    "office-desktop.example5.com:3389"
+)
+
+# Updated YouTube Video URLs
+YOUTUBE_URLS=(
+    "https://www.youtube.com/watch?v=VIDEON1"
+    "https://www.youtube.com/watch?v=VIDEON2"
+    "https://www.youtube.com/watch?v=VIDEON3"
+    "https://www.youtube.com/watch?v=VIDEON4"
+    "https://www.youtube.com/watch?v=VIDEON5"
+)
+
+# Random pause function
+random_pause() {
+    local pause_time=$((RANDOM % 301 + 300))
+    echo "Pausing for ${pause_time} seconds..."
+    sleep ${pause_time}
+}
+
+# Simulate Browsing with random link clicks
+simulate_http() {
+    if (( RANDOM % 2 )); then
+        local url=${HTTP_URLS[$RANDOM % ${#HTTP_URLS[@]}]}
+    else
+        local url=${HTTPS_URLS[$RANDOM % ${#HTTPS_URLS[@]}]}
+    fi
+    echo "Browsing: $url"
+    page_content=$(curl -s "$url")
+    links=( $(echo "$page_content" | grep -Eo 'href="[^"]+"' | sed 's/href="//' | sed 's/"//') )
+    if [ ${#links[@]} -gt 0 ]; then
+        random_link=${links[$RANDOM % ${#links[@]}]}
+        if [[ "$random_link" =~ ^/ ]]; then
+            base=$(echo "$url" | awk -F/ '{print $1"//"$3}')
+            random_link="$base$random_link"
+        fi
+        echo "Clicking link: $random_link"
+        curl -s "$random_link" > /dev/null
+    else
+        echo "No links found on $url."
+    fi
+    random_pause
+}
+
+simulate_dhcp() {
+    echo "Simulating DHCP request..."
+    random_pause
+}
+
+simulate_email() {
+    local target=${EMAIL_SERVERS[$RANDOM % ${#EMAIL_SERVERS[@]}]}
+    IFS=":" read server port <<< "$target"
+    echo "Connecting to Email server: $server on port $port"
+    timeout 10 bash -c "echo QUIT | nc -w 5 $server $port" &> /dev/null
+    random_pause
+}
+
+simulate_ssh() {
+    local target=${SSH_TARGETS[$RANDOM % ${#SSH_TARGETS[@]}]}
+    IFS=":" read server port <<< "$target"
+    echo "Attempting SSH to $server on port $port"
+    timeout 10 bash -c "nc -z -w 5 $server $port" &> /dev/null
+    random_pause
+}
+
+simulate_ftp() {
+    echo "Downloading file from FTP server: $FTP_URL"
+    wget -q --ftp-user="$FTP_USER" --ftp-password="$FTP_PASS" -O /dev/null "$FTP_URL"
+    random_pause
+}
+
+simulate_voip() {
+    local url=${VOIP_URLS[$RANDOM % ${#VOIP_URLS[@]}]}
+    echo "Accessing VoIP service: $url"
+    curl -s "$url" > /dev/null
+    random_pause
+}
+
+simulate_rdp() {
+    local target=${RDP_TARGETS[$RANDOM % ${#RDP_TARGETS[@]}]}
+    IFS=":" read server port <<< "$target"
+    echo "Attempting RDP to $server on port $port"
+    timeout 10 bash -c "nc -z -w 5 $server $port" &> /dev/null
+    random_pause
+}
+
+simulate_youtube() {
+    local url=${YOUTUBE_URLS[$RANDOM % ${#YOUTUBE_URLS[@]}]}
+    echo "Streaming YouTube video: $url (30 minutes)"
+    curl -s "$url" > /dev/null
+    sleep 1800
+}
+
+protocol_functions=(
+    simulate_http
+    simulate_dhcp
+    simulate_email
+    simulate_ssh
+    simulate_ftp
+    simulate_voip
+    simulate_rdp
+    simulate_youtube
+)
+
+echo "Starting traffic simulation..."
+while [ $(($(date +%s) - START_TIME)) -lt $TOTAL_DURATION ]; do
+    chosen_func=${protocol_functions[$RANDOM % ${#protocol_functions[@]}]}
+    echo "Running: $chosen_func"
+    $chosen_func
+done
+
+echo "Simulation complete."

@@ -9,8 +9,14 @@ DURATION=14400
 # Start time
 START_TIME=$(date +%s)
 
-# Read URLs from urls.txt file
-URLS=$(cat urls.txt)
+# Define a list of HTTP/HTTPS URLs directly in the code
+URLS=(
+    "https://www.google.com"
+    "https://www.wikipedia.org"
+    "https://www.reddit.com"
+    "https://www.stackoverflow.com"
+    "https://www.github.com"
+)
 
 # Define DNS query domains
 DNS_QUERIES=(
@@ -34,7 +40,7 @@ SSH_SERVERS=(
     "ssh.gitlab.com"
 )
 
-# Define RDP endpoints
+# Define RDP endpoints (simulation)
 RDP_ENDPOINTS=(
     "rdp://remote-desktop"
     "rdp://test-vm"
@@ -52,7 +58,7 @@ JUICE_SHOP_URL="http://192.168.122.120:3000"
 JUICE_SHOP_USER="admin@juice-sh.op"
 JUICE_SHOP_PASS="admin123"
 
-# Different Juice Shop Pages
+# Different Juice Shop Pages to interact with
 JUICE_SHOP_PAGES=(
     "/#/complain"
     "/#/login"
@@ -61,15 +67,15 @@ JUICE_SHOP_PAGES=(
     "/#/contact"
 )
 
-# Function to simulate HTTP/HTTPS traffic
+# Function to simulate HTTP/HTTPS traffic with random link clicking
 simulate_http_https() {
     echo "$(date): Starting HTTP/HTTPS traffic simulation..." | tee -a "$LOG_FILE"
-    for url in $URLS; do
+    for url in "${URLS[@]}"; do
         echo "$(date): Accessing $url" | tee -a "$LOG_FILE"
         curl -s -o /dev/null -w "HTTP Status: %{http_code} - URL: %{url_effective}\n" "$url" >> "$LOG_FILE"
         
-        # Click random links on the webpage
-        LINKS=$(curl -s "$url" | grep -oP '(?<=href=")[^"]*' | grep http | shuf -n 2)
+        # Fetch page content and extract clickable links (only those starting with http)
+        LINKS=$(curl -s "$url" | grep -oP '(?<=href=")[^"]+' | grep '^http' | shuf -n 2)
         for link in $LINKS; do
             echo "$(date): Clicking on $link" | tee -a "$LOG_FILE"
             curl -s -o /dev/null "$link"
@@ -104,7 +110,7 @@ simulate_ssh() {
     done
 }
 
-# Function to simulate RDP connections
+# Function to simulate RDP connections (simulated output)
 simulate_rdp() {
     echo "$(date): Simulating RDP connection attempts..." | tee -a "$LOG_FILE"
     for rdp in "${RDP_ENDPOINTS[@]}"; do
@@ -126,7 +132,7 @@ simulate_voip() {
 interact_with_juice_shop() {
     echo "$(date): Accessing OWASP Juice Shop at $JUICE_SHOP_URL" | tee -a "$LOG_FILE"
 
-    # Perform login
+    # Perform login using Juice Shop's REST API
     RESPONSE=$(curl -s -X POST "$JUICE_SHOP_URL/rest/user/login" \
         -H "Content-Type: application/json" \
         -d "{\"email\":\"$JUICE_SHOP_USER\", \"password\":\"$JUICE_SHOP_PASS\"}")
@@ -147,7 +153,7 @@ interact_with_juice_shop() {
     fi
 }
 
-# Loop to keep simulating traffic for the full duration
+# Loop to simulate traffic for the full duration
 echo "$(date): Starting traffic simulation for $DURATION seconds..." | tee -a "$LOG_FILE"
 while [ $(( $(date +%s) - START_TIME )) -lt $DURATION ]; do
     simulate_http_https
@@ -157,7 +163,9 @@ while [ $(( $(date +%s) - START_TIME )) -lt $DURATION ]; do
     simulate_rdp
     simulate_voip
     interact_with_juice_shop
-    sleep $((RANDOM % 30 + 10))  # Wait between 10-40 seconds before the next round
+    # Random pause between 30 and 40 seconds before next iteration
+    sleep $((RANDOM % 11 + 30))
 done
 
 echo "$(date): Traffic simulation completed." | tee -a "$LOG_FILE"
+

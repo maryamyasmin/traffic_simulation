@@ -1,0 +1,163 @@
+#!/bin/bash
+
+# Define the log file
+LOG_FILE="traffic_simulation.log"
+
+# Define the duration for the script to run (4 hours = 14400 seconds)
+DURATION=14400
+
+# Start time
+START_TIME=$(date +%s)
+
+# Read URLs from urls.txt file
+URLS=$(cat urls.txt)
+
+# Define DNS query domains
+DNS_QUERIES=(
+    "yahoo.com"
+    "stackoverflow.com"
+    "wikipedia.org"
+    "github.com"
+    "bbc.co.uk"
+)
+
+# Define mail servers for SMTP, IMAP, POP3
+MAIL_SERVERS=(
+    "smtp.office365.com"
+    "imap.gmail.com"
+    "pop.mail.yahoo.com"
+)
+
+# Define SSH servers
+SSH_SERVERS=(
+    "ssh.heroku.com"
+    "ssh.gitlab.com"
+)
+
+# Define RDP endpoints
+RDP_ENDPOINTS=(
+    "rdp://remote-desktop"
+    "rdp://test-vm"
+)
+
+# Define VoIP services
+VOIP_SERVICES=(
+    "webex.com"
+    "skype.com"
+    "googlemeet.com"
+)
+
+# OWASP Juice Shop credentials and target
+JUICE_SHOP_URL="http://192.168.122.120:3000"
+JUICE_SHOP_USER="admin@juice-sh.op"
+JUICE_SHOP_PASS="admin123"
+
+# Different Juice Shop Pages
+JUICE_SHOP_PAGES=(
+    "/#/complain"
+    "/#/login"
+    "/#/register"
+    "/#/recycle"
+    "/#/contact"
+)
+
+# Function to simulate HTTP/HTTPS traffic
+simulate_http_https() {
+    echo "$(date): Starting HTTP/HTTPS traffic simulation..." | tee -a "$LOG_FILE"
+    for url in $URLS; do
+        echo "$(date): Accessing $url" | tee -a "$LOG_FILE"
+        curl -s -o /dev/null -w "HTTP Status: %{http_code} - URL: %{url_effective}\n" "$url" >> "$LOG_FILE"
+        
+        # Click random links on the webpage
+        LINKS=$(curl -s "$url" | grep -oP '(?<=href=")[^"]*' | grep http | shuf -n 2)
+        for link in $LINKS; do
+            echo "$(date): Clicking on $link" | tee -a "$LOG_FILE"
+            curl -s -o /dev/null "$link"
+        done
+    done
+}
+
+# Function to simulate DNS queries
+simulate_dns() {
+    echo "$(date): Starting DNS traffic simulation..." | tee -a "$LOG_FILE"
+    for domain in "${DNS_QUERIES[@]}"; do
+        echo "$(date): Querying DNS for $domain" | tee -a "$LOG_FILE"
+        dig "$domain" >> "$LOG_FILE"
+    done
+}
+
+# Function to simulate mail traffic
+simulate_mail() {
+    echo "$(date): Starting Mail traffic simulation..." | tee -a "$LOG_FILE"
+    for server in "${MAIL_SERVERS[@]}"; do
+        echo "$(date): Connecting to mail server $server" | tee -a "$LOG_FILE"
+        ping -c 2 "$server" >> "$LOG_FILE"
+    done
+}
+
+# Function to simulate SSH traffic
+simulate_ssh() {
+    echo "$(date): Starting SSH traffic simulation..." | tee -a "$LOG_FILE"
+    for server in "${SSH_SERVERS[@]}"; do
+        echo "$(date): Attempting SSH connection to $server" | tee -a "$LOG_FILE"
+        ssh -o BatchMode=yes -o ConnectTimeout=5 "$server" exit 2>> "$LOG_FILE"
+    done
+}
+
+# Function to simulate RDP connections
+simulate_rdp() {
+    echo "$(date): Simulating RDP connection attempts..." | tee -a "$LOG_FILE"
+    for rdp in "${RDP_ENDPOINTS[@]}"; do
+        echo "$(date): Attempting RDP connection to $rdp" | tee -a "$LOG_FILE"
+        echo "RDP connection simulated to $rdp" >> "$LOG_FILE"
+    done
+}
+
+# Function to simulate VoIP traffic
+simulate_voip() {
+    echo "$(date): Simulating VoIP traffic..." | tee -a "$LOG_FILE"
+    for service in "${VOIP_SERVICES[@]}"; do
+        echo "$(date): Checking VoIP service $service" | tee -a "$LOG_FILE"
+        curl -s -o /dev/null "$service"
+    done
+}
+
+# Function to interact with OWASP Juice Shop
+interact_with_juice_shop() {
+    echo "$(date): Accessing OWASP Juice Shop at $JUICE_SHOP_URL" | tee -a "$LOG_FILE"
+
+    # Perform login
+    RESPONSE=$(curl -s -X POST "$JUICE_SHOP_URL/rest/user/login" \
+        -H "Content-Type: application/json" \
+        -d "{\"email\":\"$JUICE_SHOP_USER\", \"password\":\"$JUICE_SHOP_PASS\"}")
+
+    TOKEN=$(echo "$RESPONSE" | grep -oP '(?<="token":")[^"]+')
+
+    if [ -n "$TOKEN" ]; then
+        echo "$(date): Successfully logged in to Juice Shop" | tee -a "$LOG_FILE"
+
+        # Browse different pages within Juice Shop
+        for page in "${JUICE_SHOP_PAGES[@]}"; do
+            echo "$(date): Visiting Juice Shop page: $JUICE_SHOP_URL$page" | tee -a "$LOG_FILE"
+            curl -s -o /dev/null -H "Authorization: Bearer $TOKEN" "$JUICE_SHOP_URL$page"
+            sleep $((RANDOM % 10 + 5))  # Random delay between 5-15 seconds
+        done
+    else
+        echo "$(date): Failed to login to Juice Shop" | tee -a "$LOG_FILE"
+    fi
+}
+
+# Loop to keep simulating traffic for the full duration
+echo "$(date): Starting traffic simulation for $DURATION seconds..." | tee -a "$LOG_FILE"
+while [ $(( $(date +%s) - START_TIME )) -lt $DURATION ]; do
+    simulate_http_https
+    simulate_dns
+    simulate_mail
+    simulate_ssh
+    simulate_rdp
+    simulate_voip
+    interact_with_juice_shop
+    sleep $((RANDOM % 30 + 10))  # Wait between 10-40 seconds before the next round
+done
+
+echo "$(date): Traffic simulation completed." | tee -a "$LOG_FILE"

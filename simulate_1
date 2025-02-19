@@ -1,39 +1,69 @@
 #!/bin/bash
+# Traffic Simulator - Variant with Embedded URLs and FTP
+# This script simulates diverse network activity over a 4-hour period (14400 seconds).
+# Activities include:
+# - HTTP/HTTPS browsing with random link clicking
+# - DNS queries
+# - Mail server pings
+# - FTP file downloads from a specified FTP server
 
 # Define the log file
 LOG_FILE="traffic_simulation.log"
 
-# Define the duration for the script to run (in seconds)
-DURATION=14400  # 4 hours (14400 seconds)
+# Define the duration for the script to run (4 hours = 14400 seconds)
+DURATION=14400
 
 # Start time
 START_TIME=$(date +%s)
 
-# Read URLs from urls.txt file
-URLS=$(cat urls.txt)
+# Hard-coded list of HTTP/HTTPS URLs
+URLS=(
+    "https://www.google.com"
+    "https://www.wikipedia.org"
+    "https://www.reddit.com"
+    "https://www.stackoverflow.com"
+    "https://www.github.com"
+)
 
 # Define DNS query domains
 DNS_QUERIES=(
-    "example.com"
-    "wikipedia.org"
-    "yahoo.com"
-    "github.com"
+    "cloudflare.com"
     "google.com"
+    "openai.com"
+    "bbc.com"
+    "microsoft.com"
 )
 
-# Define email simulation using SMTP, IMAP, or POP3
+# Define mail servers for SMTP, IMAP, POP3
 MAIL_SERVERS=(
     "smtp.gmail.com"
     "imap.gmail.com"
-    "pop.gmail.com"
+    "pop.mail.yahoo.com"
 )
 
-# Function to simulate HTTP/HTTPS traffic
+# FTP server details
+FTP_SERVER="192.168.122.171"
+FTP_USER="ftpuser"
+FTP_PASS="ftpuser"
+# List of FTP files to download (located in the 'uploads' folder)
+FTP_FILES=(
+    "google-chrome.deb"
+    "adobe.exe"
+)
+
+# Function to simulate HTTP/HTTPS browsing with random link clicks
 simulate_http_https() {
     echo "$(date): Starting HTTP/HTTPS traffic simulation..." | tee -a "$LOG_FILE"
-    for url in $URLS; do
+    for url in "${URLS[@]}"; do
         echo "$(date): Accessing $url" | tee -a "$LOG_FILE"
         curl -s -o /dev/null -w "HTTP Status: %{http_code} - URL: %{url_effective}\n" "$url" >> "$LOG_FILE"
+        
+        # Fetch page content and extract clickable links (only those starting with http)
+        LINKS=$(curl -s "$url" | grep -oP '(?<=href=")[^"]+' | grep '^http' | shuf -n 2)
+        for link in $LINKS; do
+            echo "$(date): Clicking on $link" | tee -a "$LOG_FILE"
+            curl -s -o /dev/null "$link"
+        done
     done
 }
 
@@ -55,12 +85,23 @@ simulate_mail() {
     done
 }
 
-# Loop to keep simulating traffic until the duration is reached
+# Function to simulate FTP file downloads
+simulate_ftp() {
+    echo "$(date): Starting FTP traffic simulation..." | tee -a "$LOG_FILE"
+    for file in "${FTP_FILES[@]}"; do
+        FTP_URL="ftp://$FTP_SERVER/uploads/$file"
+        echo "$(date): Downloading $FTP_URL" | tee -a "$LOG_FILE"
+        wget -q --ftp-user="$FTP_USER" --ftp-password="$FTP_PASS" -O /dev/null "$FTP_URL"
+    done
+}
+
+# Main simulation loop: run until the duration is reached
 echo "$(date): Starting traffic simulation for $DURATION seconds..." | tee -a "$LOG_FILE"
 while [ $(( $(date +%s) - START_TIME )) -lt $DURATION ]; do
     simulate_http_https
     simulate_dns
     simulate_mail
+    simulate_ftp
     sleep 10  # Wait 10 seconds before the next round
 done
 

@@ -1,75 +1,68 @@
 #!/bin/bash
-# Traffic Simulator Variant with URLs and FTP (4 hours)
-# This script simulates web browsing by reading URLs from a file (urls.txt)
-# and simulates FTP file transfers by downloading specific files from an FTP server.
-# FTP server details: IP=192.168.122.171, folder="uploads", files: google-chrome.deb, adobe.exe.
-# Credentials: username=ftpuser, password=ftpuser.
-# Duration: 4 hours = 14400 seconds
+# Traffic Simulator - Variant with URLs and FTP
+# This script simulates network activity over 4 hours (14400 seconds) by:
+# - Browsing a list of predefined HTTP/HTTPS URLs
+# - Downloading files from an FTP server at 192.168.122.171/uploads using ftpuser credentials
+# The script randomly pauses between iterations to mimic realistic user behavior.
 
-# Set duration (4 hours in seconds)
+# Duration for the script to run (4 hours = 14400 seconds)
 DURATION=14400
 START_TIME=$(date +%s)
 
-# Define log file
-LOG_FILE="traffic_simulation.log"
+# Define a list of HTTP/HTTPS URLs (hardcoded)
+URLS=(
+    "https://www.google.com"
+    "https://www.wikipedia.org"
+    "https://www.reddit.com"
+    "https://www.stackoverflow.com"
+    "https://www.github.com"
+)
 
-# Read URLs from urls.txt file (one URL per line)
-URLS=$(cat urls.txt)
+# FTP server details and files to download
+FTP_SERVER="192.168.122.171"
+FTP_USER="ftpuser"
+FTP_PASS="ftpuser"
+FTP_FILES=(
+    "google-chrome.deb"
+    "adobe.exe"
+)
 
-# Random pause function: pause for a random duration between 30 and 90 seconds
-random_pause() {
-    local pause_time=$((RANDOM % 61 + 30))
-    echo "$(date): Pausing for ${pause_time} seconds..."
-    sleep ${pause_time}
-}
-
-# Function to simulate HTTP/HTTPS browsing
+# Function to simulate HTTP/HTTPS browsing with random link clicking
 simulate_http() {
-    echo "$(date): Starting HTTP/HTTPS traffic simulation..." | tee -a "$LOG_FILE"
-    for url in $URLS; do
-        echo "$(date): Accessing $url" | tee -a "$LOG_FILE"
-        # Fetch the page and log the HTTP status code
-        curl -s -o /dev/null -w "HTTP Status: %{http_code} - URL: %{url_effective}\n" "$url" >> "$LOG_FILE"
+    echo "$(date): Simulating HTTP/HTTPS browsing..."
+    for url in "${URLS[@]}"; do
+        echo "$(date): Accessing $url"
+        # Access the page and output HTTP status code
+        curl -s -o /dev/null -w "HTTP Status: %{http_code} - URL: %{url_effective}\n" "$url"
         
-        # Extract and randomly click on 2 links from the page content
-        LINKS=$(curl -s "$url" | grep -oP '(?<=href=")[^"]*' | grep -E '^http' | shuf -n 2)
+        # Fetch page content and extract clickable links (only those starting with http)
+        LINKS=$(curl -s "$url" | grep -oP '(?<=href=")[^"]+' | grep '^http' | shuf -n 2)
         for link in $LINKS; do
-            echo "$(date): Clicking on $link" | tee -a "$LOG_FILE"
+            echo "$(date): Clicking on link: $link"
             curl -s -o /dev/null "$link"
         done
     done
-    random_pause
 }
 
 # Function to simulate FTP file downloads
 simulate_ftp() {
-    echo "$(date): Starting FTP traffic simulation..." | tee -a "$LOG_FILE"
-    
-    # Define base FTP URL and credentials
-    FTP_BASE_URL="ftp://192.168.122.171/uploads"
-    FTP_USER="ftpuser"
-    FTP_PASS="ftpuser"
-    
-    # Files to download
-    FILES=(
-        "google-chrome.deb"
-        "adobe.exe"
-    )
-    
-    for file in "${FILES[@]}"; do
-        FTP_URL="${FTP_BASE_URL}/${file}"
-        echo "$(date): Downloading $file from FTP server at $FTP_URL" | tee -a "$LOG_FILE"
+    echo "$(date): Simulating FTP file downloads..."
+    for file in "${FTP_FILES[@]}"; do
+        FTP_URL="ftp://$FTP_SERVER/uploads/$file"
+        echo "$(date): Downloading $FTP_URL"
         wget -q --ftp-user="$FTP_USER" --ftp-password="$FTP_PASS" -O /dev/null "$FTP_URL"
     done
-    random_pause
 }
 
-# Main simulation loop: run until 4 hours have elapsed
-echo "$(date): Starting traffic simulation for $DURATION seconds..." | tee -a "$LOG_FILE"
+# Main simulation loop: Run until 4 hours have elapsed
+echo "$(date): Starting traffic simulation for $DURATION seconds..."
 while [ $(( $(date +%s) - START_TIME )) -lt $DURATION ]; do
     simulate_http
     simulate_ftp
-    sleep $((RANDOM % 30 + 10))  # Wait between 10 and 39 seconds before next cycle
+    # Random pause between 30 and 90 seconds for realism
+    SLEEP_TIME=$(( RANDOM % 61 + 30 ))
+    echo "$(date): Sleeping for $SLEEP_TIME seconds..."
+    sleep $SLEEP_TIME
 done
 
-echo "$(date): Traffic simulation completed." | tee -a "$LOG_FILE"
+echo "$(date): Traffic simulation complete."

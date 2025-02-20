@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Define the log file
+LOG_FILE="traffic_simulation.log"
+
+# Define the duration for the script to run (4 hours = 14400 seconds)
+DURATION=14400
+
+# Start time
+START_TIME=$(date +%s)
+
+# Define a list of HTTP/HTTPS URLs including OWASP Juice Shop pages
+URLS=(
+    "https://www.google.com"
+    "https://www.wikipedia.org"
+    "https://www.reddit.com"
+    "https://www.stackoverflow.com"
+    "https://www.github.com"
+    "http://192.168.122.120:3000/#/complain"
+    "http://192.168.122.120:3000/#/login"
+    "http://192.168.122.120:3000/#/register"
+    "http://192.168.122.120:3000/#/recycle"
+    "http://192.168.122.120:3000/#/contact"
+)
+
+# Function to simulate browsing activity
+simulate_browsing() {
+    echo "$(date): Starting browsing simulation..." | tee -a "$LOG_FILE"
+    for url in "${URLS[@]}"; do
+        echo "$(date): Accessing $url" | tee -a "$LOG_FILE"
+        curl -s -o /dev/null "$url"
+        sleep $((RANDOM % 10 + 5))  # Random delay between 5-15 seconds
+    done
+}
+
+# Function to simulate OWASP Juice Shop interactions
+interact_with_juice_shop() {
+    echo "$(date): Accessing OWASP Juice Shop" | tee -a "$LOG_FILE"
+    
+    RESPONSE=$(curl -s -X POST "http://192.168.122.120:3000/rest/user/login" \
+        -H "Content-Type: application/json" \
+        -d '{"email":"admin@juice-sh.op", "password":"admin123"}')
+    
+    TOKEN=$(echo "$RESPONSE" | grep -oP '(?<="token":")[^"]+')
+    
+    if [ -n "$TOKEN" ]; then
+        echo "$(date): Successfully logged into Juice Shop" | tee -a "$LOG_FILE"
+        
+        for page in "${URLS[@]}"; do
+            if [[ "$page" == *"192.168.122.120"* ]]; then
+                echo "$(date): Visiting Juice Shop page: $page" | tee -a "$LOG_FILE"
+                curl -s -o /dev/null -H "Authorization: Bearer $TOKEN" "$page"
+                sleep $((RANDOM % 10 + 5))
+            fi
+        done
+    else
+        echo "$(date): Failed to log into Juice Shop" | tee -a "$LOG_FILE"
+    fi
+}
+
+# Loop to simulate traffic for the full duration
+echo "$(date): Starting mixed traffic simulation for $DURATION seconds..." | tee -a "$LOG_FILE"
+while [ $(( $(date +%s) - START_TIME )) -lt $DURATION ]; do
+    simulate_browsing
+    interact_with_juice_shop
+    sleep $((RANDOM % 11 + 30))  # Random pause between 30 and 40 seconds
+
+done
+
+echo "$(date): Traffic simulation completed." | tee -a "$LOG_FILE"

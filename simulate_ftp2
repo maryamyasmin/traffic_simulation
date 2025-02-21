@@ -1,0 +1,165 @@
+#!/bin/bash
+
+# Define the duration for the script to run (4 hours = 14400 seconds)
+DURATION=14400
+
+# Start time
+START_TIME=$(date +%s)
+
+# Define HTTP/HTTPS URLs for browsing
+URLS=(
+    "https://www.google.com"
+    "https://www.wikipedia.org"
+    "https://www.reddit.com"
+    "https://www.stackoverflow.com"
+    "https://www.github.com"
+)
+
+# Define DNS query domains
+DNS_QUERIES=(
+    "yahoo.com"
+    "stackoverflow.com"
+    "wikipedia.org"
+    "github.com"
+    "bbc.co.uk"
+)
+
+# Define mail servers for SMTP, IMAP, POP3
+MAIL_SERVERS=(
+    "smtp.office365.com"
+    "imap.gmail.com"
+    "pop.mail.yahoo.com"
+)
+
+# Define SSH servers
+SSH_SERVERS=(
+    "ssh.heroku.com"
+    "ssh.gitlab.com"
+)
+
+# Define RDP endpoints (simulation)
+RDP_ENDPOINTS=(
+    "rdp://remote-desktop"
+    "rdp://test-vm"
+)
+
+# Define VoIP services
+VOIP_SERVICES=(
+    "webex.com"
+    "skype.com"
+    "googlemeet.com"
+)
+
+# FTP Server Details
+FTP_SERVER="192.168.122.171"
+FTP_USER="ftpuser"
+FTP_PASS="ftpuser"
+FTP_FILES=(
+    "adobe.exe"
+    "google-chrome.deb"
+    "sample.txt"
+)
+
+# OWASP Juice Shop credentials and target
+JUICE_SHOP_URL="http://192.168.122.120:3000"
+JUICE_SHOP_USER="admin@juice-sh.op"
+JUICE_SHOP_PASS="admin123"
+
+# Different Juice Shop Pages to interact with
+JUICE_SHOP_PAGES=(
+    "/#/complain"
+    "/#/login"
+    "/#/register"
+    "/#/recycle"
+    "/#/contact"
+)
+
+# Function to simulate HTTP/HTTPS traffic with random link clicking
+simulate_http_https() {
+    for url in "${URLS[@]}"; do
+        curl -s -o /dev/null "$url"
+        
+        # Fetch page content and extract clickable links
+        LINKS=$(curl -s "$url" | grep -oP '(?<=href=")[^"]+' | grep '^http' | shuf -n 2)
+        for link in $LINKS; do
+            curl -s -o /dev/null "$link"
+        done
+    done
+}
+
+# Function to simulate DNS queries
+simulate_dns() {
+    for domain in "${DNS_QUERIES[@]}"; do
+        dig "$domain" > /dev/null 2>&1
+    done
+}
+
+# Function to simulate mail traffic
+simulate_mail() {
+    for server in "${MAIL_SERVERS[@]}"; do
+        ping -c 2 "$server" > /dev/null 2>&1
+    done
+}
+
+# Function to simulate SSH traffic
+simulate_ssh() {
+    for server in "${SSH_SERVERS[@]}"; do
+        ssh -o BatchMode=yes -o ConnectTimeout=5 "$server" exit 2>/dev/null
+    done
+}
+
+# Function to simulate RDP connections (simulated output)
+simulate_rdp() {
+    for rdp in "${RDP_ENDPOINTS[@]}"; do
+        echo "Simulated RDP connection to $rdp"
+    done
+}
+
+# Function to simulate VoIP traffic
+simulate_voip() {
+    for service in "${VOIP_SERVICES[@]}"; do
+        curl -s -o /dev/null "$service"
+    done
+}
+
+# Function to interact with OWASP Juice Shop
+interact_with_juice_shop() {
+    RESPONSE=$(curl -s -X POST "$JUICE_SHOP_URL/rest/user/login" \
+        -H "Content-Type: application/json" \
+        -d "{\"email\":\"$JUICE_SHOP_USER\", \"password\":\"$JUICE_SHOP_PASS\"}")
+
+    TOKEN=$(echo "$RESPONSE" | grep -oP '(?<="token":")[^"]+')
+
+    if [ -n "$TOKEN" ]; then
+        for page in "${JUICE_SHOP_PAGES[@]}"; do
+            curl -s -o /dev/null -H "Authorization: Bearer $TOKEN" "$JUICE_SHOP_URL$page"
+            sleep $((RANDOM % 10 + 5))  # Random delay between 5-15 seconds
+        done
+    fi
+}
+
+# Function to simulate FTP downloads
+simulate_ftp() {
+    ftp -inv "$FTP_SERVER" <<EOF
+user $FTP_USER $FTP_PASS
+binary
+cd /downloads
+mget ${FTP_FILES[*]}
+bye
+EOF
+}
+
+# Loop to simulate traffic for the full duration
+while [ $(( $(date +%s) - START_TIME )) -lt $DURATION ]; do
+    simulate_http_https
+    simulate_dns
+    simulate_mail
+    simulate_ssh
+    simulate_rdp
+    simulate_voip
+    interact_with_juice_shop
+    simulate_ftp
+    sleep $((RANDOM % 11 + 30))  # Random pause between 30 and 40 seconds
+done
+
+echo "Traffic simulation completed."

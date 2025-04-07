@@ -1,0 +1,37 @@
+apt update
+apt install -y openssh-server
+
+
+2. Check if config exists now:
+
+
+ls -l /etc/ssh/sshd_config
+
+# Set a root password (WebTerm often runs as root)
+echo "root:root" | chpasswd
+
+# Allow root login if it's disabled
+sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+3. Fix /var/run/sshd if needed
+bash
+Copy
+Edit
+
+mkdir -p /var/run/sshd
+
+chmod 0755 /var/run/sshd
+
+
+
+
+ 
+4. Start the SSH service
+Try either of the following:
+
+
+
+
+service ssh start
+# or
+/etc/init.d/ssh start
